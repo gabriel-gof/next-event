@@ -80,10 +80,10 @@ var LABEL_SETUP_CONNECT_SUBTITLE = "Choose the method that matches your calendar
 var LABEL_SETUP_OPTION1_TITLE = "Option 1: Google Workspace / OAuth (Work accounts)"
 var LABEL_SETUP_OPTION1_DESC =
   "If your organization disables private iCal URLs, run the interactive OAuth setup:"
-var LABEL_SETUP_OPTION1_CMD = "~/.config/omarchy/plugins/tobiasz-p.next-event/sync/setup"
+var LABEL_SETUP_OPTION1_CMD = "~/.config/omarchy/plugins/gabriel.next-event/sync/setup"
 var LABEL_SETUP_OPTION2_TITLE = "Option 2: Private iCal (.ics) Feed URL"
 var LABEL_SETUP_OPTION2_DESC = "For personal Google Calendar, Outlook, iCloud, or Nextcloud:"
-var LABEL_SETUP_OPTION2_CMD = "omarchy bar set tobiasz-p.next-event icsUrl '<iCal-url>'"
+var LABEL_SETUP_OPTION2_CMD = "omarchy bar set gabriel.next-event icsUrl '<iCal-url>'"
 
 var LABEL_NO_MEETINGS = "No upcoming meetings"
 var LABEL_SCHEDULE_CLEAR = "Your schedule is clear for the next few days."
@@ -1875,6 +1875,64 @@ class ScheduleAggregator {
 }
 
 // ---------------------------------------------------------------------------
+// CompactBarPolicy: icon urgency and reminder timing
+// ---------------------------------------------------------------------------
+
+class CompactBarPolicy {
+  static isTimedEvent(event) {
+    return !!(
+      event &&
+      event.start &&
+      event.end &&
+      !ScheduleAggregator.isEventAllDay(event) &&
+      !isNaN(event.start.getTime()) &&
+      !isNaN(event.end.getTime())
+    )
+  }
+
+  static state(event, now) {
+    now = now || new Date()
+    if (!CompactBarPolicy.isTimedEvent(event)) return "idle"
+
+    var nowMs = now.getTime()
+    var startMs = event.start.getTime()
+    var endMs = event.end.getTime()
+    if (nowMs >= endMs) return "idle"
+    if (nowMs >= startMs) return "ongoing"
+
+    var minutesUntil = (startMs - nowMs) / MS_PER_MINUTE
+    if (minutesUntil <= 10) return "imminent"
+    if (minutesUntil <= 30) return "soon"
+    return "scheduled"
+  }
+
+  static notificationMilestone(event, now) {
+    var state = CompactBarPolicy.state(event, now)
+    if (state === "imminent") return 10
+    if (state === "soon") return 30
+    return null
+  }
+
+  static notificationKey(event, milestone) {
+    if (!CompactBarPolicy.isTimedEvent(event) || (milestone !== 30 && milestone !== 10)) return ""
+    var identity = String(event.uid || event.title || LABEL_UNTITLED)
+    return identity + "|" + event.start.getTime() + "|" + milestone
+  }
+
+  static notificationPayload(event, milestone, use12Hour) {
+    if (!CompactBarPolicy.isTimedEvent(event) || (milestone !== 30 && milestone !== 10)) return null
+    return {
+      headline: String(event.title || LABEL_UNTITLED),
+      description:
+        "Starts in " +
+        milestone +
+        " minutes · " +
+        DisplayFormatter.hm(event.start, use12Hour === true)
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // DisplayFormatter: display strings, labels, and timer formatting
 // ---------------------------------------------------------------------------
 
@@ -2326,6 +2384,18 @@ function daySectionTitle(date, now) {
 function isEventAllDay(event) {
   return ScheduleAggregator.isEventAllDay(event)
 }
+function compactBarState(event, now) {
+  return CompactBarPolicy.state(event, now)
+}
+function notificationMilestone(event, now) {
+  return CompactBarPolicy.notificationMilestone(event, now)
+}
+function notificationKey(event, milestone) {
+  return CompactBarPolicy.notificationKey(event, milestone)
+}
+function notificationPayload(event, milestone, use12Hour) {
+  return CompactBarPolicy.notificationPayload(event, milestone, use12Hour)
+}
 function parseTimeFormat(value) {
   return FeedConfigParser.parseTimeFormat(value)
 }
@@ -2361,6 +2431,7 @@ if (typeof module !== "undefined" && module.exports) {
     JsonStateParser: JsonStateParser,
     FeedConfigParser: FeedConfigParser,
     ScheduleAggregator: ScheduleAggregator,
+    CompactBarPolicy: CompactBarPolicy,
     DisplayFormatter: DisplayFormatter,
     PanelNavigationModel: PanelNavigationModel,
 
@@ -2400,7 +2471,11 @@ if (typeof module !== "undefined" && module.exports) {
     formatUpdated: formatUpdated,
     dayLabel: dayLabel,
     daySectionTitle: daySectionTitle,
-    isEventAllDay: isEventAllDay
+    isEventAllDay: isEventAllDay,
+    compactBarState: compactBarState,
+    notificationMilestone: notificationMilestone,
+    notificationKey: notificationKey,
+    notificationPayload: notificationPayload
   }
 
   for (var constantKey in Constants) {

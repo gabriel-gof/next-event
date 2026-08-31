@@ -17,6 +17,7 @@ describe("Model (Facade)", () => {
       assert.strictEqual(typeof Model.JsonStateParser, "function")
       assert.strictEqual(typeof Model.FeedConfigParser, "function")
       assert.strictEqual(typeof Model.ScheduleAggregator, "function")
+      assert.strictEqual(typeof Model.CompactBarPolicy, "function")
       assert.strictEqual(typeof Model.DisplayFormatter, "function")
       assert.strictEqual(typeof Model.PanelNavigationModel, "function")
       assert.strictEqual(typeof Model.Constants, "object")
@@ -48,6 +49,13 @@ describe("Model (Facade)", () => {
       assert.strictEqual(state.nextMeeting.title, "Team Standup")
       assert.strictEqual(Model.heroHeaderMeta(ev), "30m  ·    Meet")
       assert.strictEqual(Model.barLabel(true, ev, now, 30), "  Team Standup · in 60 min")
+      assert.strictEqual(Model.compactBarState(ev, now), "scheduled")
+      assert.strictEqual(Model.notificationMilestone(ev, new Date(2026, 7, 28, 9, 35)), 30)
+      assert.strictEqual(Model.notificationKey(ev, 30), "Team Standup|1787922000000|30")
+      assert.deepStrictEqual(Model.notificationPayload(ev, 10, false), {
+        headline: "Team Standup",
+        description: "Starts in 10 minutes · 10:00"
+      })
       assert.strictEqual(Model.hm(ev.start, true), "10:00 AM")
       assert.strictEqual(Model.timeRange(ev.start, ev.end, false, true), "10:00 AM–10:30 AM")
       assert.deepStrictEqual(Model.buildCalendarLegend([ev], []), [])

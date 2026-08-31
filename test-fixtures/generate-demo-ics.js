@@ -237,7 +237,7 @@ function generateDemoIcs() {
   console.log("  Personal calendar: " + personalPath)
   console.log("\nTo test in Omarchy bar, run:")
   console.log(
-    '  omarchy bar set tobiasz-p.next-event icsUrl "Work|file://' +
+    '  omarchy bar set gabriel.next-event icsUrl "Work|file://' +
       workPath +
       ",Personal|file://" +
       personalPath +

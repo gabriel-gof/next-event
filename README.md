@@ -1,14 +1,18 @@
-# NextEvent
+# Compact NextEvent
 
-[![CI](https://github.com/tobiasz-p/next-event/actions/workflows/ci.yml/badge.svg)](https://github.com/tobiasz-p/next-event/actions/workflows/ci.yml)
-[![Omarchy Marketplace](https://img.shields.io/badge/Marketplace-tobiasz--p.next--event-7c3aed)](https://omarchyplugins.com/plugin.html?id=tobiasz-p.next-event)
+[![CI](https://github.com/gabriel-gof/next-event/actions/workflows/ci.yml/badge.svg)](https://github.com/gabriel-gof/next-event/actions/workflows/ci.yml)
 [![Omarchy](https://img.shields.io/badge/Omarchy-Platform-1793d1)](https://omarchy.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![ESLint](https://img.shields.io/badge/linter-eslint-4B32C3.svg?logo=eslint&logoColor=white)](https://eslint.org)
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?logo=prettier&logoColor=white)](https://github.com/prettier/prettier)
 
-Next event, right in the bar — native to your Omarchy shell. Shows the next
-upcoming event from your calendar with live countdowns and lets you join video calls (Google Meet, Zoom, Teams, Webex, GoToMeeting) with a single click.
+Your calendar, quietly present in the Omarchy bar. A single camera glyph changes
+color as the next timed event approaches, while the full agenda stays one click
+away. Desktop reminders arrive 30 and 10 minutes before the event.
+
+This personal fork is based on
+[tobiasz-p/next-event](https://github.com/tobiasz-p/next-event) and keeps that
+project as its upstream source.
 
 ## Contents
 
@@ -29,7 +33,7 @@ upcoming event from your calendar with live countdowns and lets you join video c
 <p align="center">
   <img src="preview.png" alt="NextEvent Overview" width="400">
   <br>
-  <em>Active meeting with live countdown in the bar, hero card with Join Meeting action, per-feed color indicators, and multi-day grouped agenda</em>
+  <em>Compact camera indicator in the bar; click for the complete agenda and Join Meeting action</em>
 </p>
 
 ## Screenshots
@@ -60,7 +64,8 @@ upcoming event from your calendar with live countdowns and lets you join video c
 
 - **Google Workspace OAuth & Universal Calendar Support**: Connect corporate Google Workspace accounts via guided OAuth setup, or use standard `.ics` feeds from Google Calendar, Microsoft Outlook, Apple iCloud, Nextcloud, Proton, and custom URLs
 - **Multiple Calendars**: Combine several `.ics` feeds (e.g. work + personal) into one widget. Give each feed a `label|` name so events carry a small tag, shared events are deduplicated, and one offline calendar doesn't hide the rest
-- **Bar Widget**: Shows the next event with live countdown (`Daily in 15 min`, `Daily · 15 min left`, `Daily · 14:00`, `Daily · Tmrw 14:00`, `Daily · Wed 14:00`). Set `timeFormat` to `12` for AM/PM times
+- **Compact Bar Widget**: Always renders one camera glyph instead of an event title or countdown. Gray means idle, blue means scheduled, yellow means within 30 minutes, orange means within 10 minutes, and pink means happening now
+- **Focused Reminders**: Sends one desktop notification 30 minutes before and another 10 minutes before each timed event. All-day entries stay silent, and a private on-disk ledger prevents duplicates across monitors and shell restarts
 - **Quick Join & Settings**: Click to open the agenda panel; single click on "Join Meeting" opens the video link (Google Meet, Zoom, Teams, Webex, GoToMeeting) in your default browser; click the Settings button next to Refresh (or press `,`) to customize all options directly in the UI
 - **Instant Actions**: Right-click on the bar widget to join the next meeting immediately; middle-click to force-refresh
 - **Keyboard Navigation**: With the agenda panel open, `↑`/`↓` (or `j`/`k`) move through the refresh and settings buttons, hero actions, and event rows, `Enter`/`Space` activates, `r` refreshes, `,` toggles settings, `m` joins the next meeting, `o` opens it in the calendar, `Tab`/`Shift+Tab` switch panels, `Escape` closes — all scoped to the focused panel so no Omarchy keybinding is ever shadowed
@@ -71,19 +76,19 @@ upcoming event from your calendar with live countdowns and lets you join video c
 ## Install
 
 ```sh
-omarchy plugin add https://github.com/tobiasz-p/next-event.git --enable
+omarchy plugin add https://github.com/gabriel-gof/next-event.git --enable
 ```
 
-Or manually: copy this folder into `~/.config/omarchy/plugins/tobiasz-p.next-event` and run
+Or manually: copy this folder into `~/.config/omarchy/plugins/gabriel.next-event` and run
 
 ```sh
-omarchy plugin enable tobiasz-p.next-event
+omarchy plugin enable gabriel.next-event
 ```
 
 ## Remove
 
 ```sh
-omarchy plugin remove tobiasz-p.next-event
+omarchy plugin remove gabriel.next-event
 ```
 
 ---
@@ -97,7 +102,7 @@ NextEvent supports two calendar sources:
 In many Google Workspace organizations, administrators disable the "Secret address in iCal format" / private ICS sharing for security policies. NextEvent includes guided OAuth onboarding:
 
 ```sh
-~/.config/omarchy/plugins/tobiasz-p.next-event/sync/setup
+~/.config/omarchy/plugins/gabriel.next-event/sync/setup
 ```
 
 #### Why bring your own OAuth credentials?
@@ -115,7 +120,7 @@ The setup script automates GCP project creation, Google Calendar API enablement,
 For personal accounts (Google Calendar, Outlook, iCloud, Nextcloud, Fastmail):
 
 ```sh
-omarchy bar set tobiasz-p.next-event icsUrl '<your-private-ics-url>'
+omarchy bar set gabriel.next-event icsUrl '<your-private-ics-url>'
 ```
 
 #### Multiple calendars & Custom Colors
@@ -124,13 +129,13 @@ omarchy bar set tobiasz-p.next-event icsUrl '<your-private-ics-url>'
 specify a label and color (e.g. `Label|#HEX|url` or `Label|url` or `#HEX|url`). If no color is specified, NextEvent automatically assigns a distinct, attractive palette color:
 
 ```sh
-omarchy bar set tobiasz-p.next-event icsUrl 'Work|#4285f4|https://…/work.ics,Personal|#34a853|https://…/personal.ics'
+omarchy bar set gabriel.next-event icsUrl 'Work|#4285f4|https://…/work.ics,Personal|#34a853|https://…/personal.ics'
 ```
 
 A single unlabeled feed still works seamlessly:
 
 ```sh
-omarchy bar set tobiasz-p.next-event icsUrl 'https://…/single.ics'
+omarchy bar set gabriel.next-event icsUrl 'https://…/single.ics'
 ```
 
 For URLs that themselves contain a comma or `|`, use a JSON array of objects
@@ -150,14 +155,14 @@ fetched independently, so if one calendar is unreachable the others still load
 3. Set it on the widget:
 
 ```sh
-omarchy bar set tobiasz-p.next-event icsUrl 'https://calendar.google.com/calendar/ical/xxxxx/private-xxxxxxxx/basic.ics'
+omarchy bar set gabriel.next-event icsUrl 'https://calendar.google.com/calendar/ical/xxxxx/private-xxxxxxxx/basic.ics'
 ```
 
 ---
 
 ## Available Settings
 
-Configure settings with `omarchy bar set tobiasz-p.next-event <key> <value>`:
+Configure settings with `omarchy bar set gabriel.next-event <key> <value>`:
 
 | Key                   | Default | Description                                         |
 | --------------------- | ------- | --------------------------------------------------- |
@@ -165,13 +170,13 @@ Configure settings with `omarchy bar set tobiasz-p.next-event <key> <value>`:
 | `eventsJsonPath`      | `~/.local/state/omarchy/calendar-events.json` | Path to the JSON events state file (written by `sync/setup`, `omarchy-calendar`, or custom script) |
 | `refreshMinutes`      | `5`     | How often to refetch feeds in ICS mode              |
 | `showDaysAhead`       | `3`     | How many days ahead to list meetings                |
-| `maxTitleLength`      | `28`    | Bar label truncation length                         |
+| `maxTitleLength`      | `28`    | Legacy upstream setting; the compact bar does not render titles |
 | `timeFormat`          | `24`    | Time display format: `24` (24-hour) or `12` (AM/PM) |
 | `maxFeedSizeMiB`      | `10`    | Maximum size of each downloaded calendar feed (MiB) |
 | `showOnlyWithVideoLink` | `false` | Only show meetings in the bar countdown that have a video link |
 | `showCalendarLabel`   | `true`  | Include calendar name in the bar widget tooltip      |
 | `useCalendarColors`   | `true`  | Tint event indicators and badges in the panel using calendar-specific colors |
-| `colorOnBar`          | `false` | Also tint the bar widget text using the next meeting's calendar color (requires `useCalendarColors` to be `true`) |
+| `colorOnBar`          | `false` | Legacy upstream setting; compact urgency colors always control the glyph |
 | `browserCommand`      | `""`    | Command used to open the Meet URL (`xdg-open` by default) |
 | `calendarUrlBase`     | `"https://calendar.google.com/calendar"` | Base URL for "Open in Calendar" (opens `/r` route; set e.g. `https://calendar.google.com/calendar/u/1` for multi-account) |
 | `keyRefresh`          | `r`     | Panel key that force-refreshes the feeds            |
@@ -189,7 +194,7 @@ it. Add this to `~/.config/hypr/bindings.lua` (pick any combo you like —
 `SUPER + CTRL + M` is free in the default Omarchy config):
 
 ```lua
-o.bind("SUPER + CTRL + M", "Next event", "omarchy-shell shell toggle tobiasz-p.next-event")
+o.bind("SUPER + CTRL + M", "Next event", "omarchy-shell shell toggle gabriel.next-event")
 ```
 
 ### Panel keyboard shortcuts
@@ -213,7 +218,11 @@ browser; refreshing keeps it open.
 
 ## Privacy
 
-Calendar data is fetched directly by your machine. No external intermediate service, no 3rd-party servers, no telemetry.
+Calendar data is fetched directly by your machine. No external intermediate
+service, no third-party servers, and no telemetry. Reminder delivery keys are
+stored with `0600` permissions in
+`~/.local/state/omarchy/next-event-notifications.json`; event titles and
+calendar feed URLs are not written there.
 
 ## Contributing
 
@@ -228,7 +237,7 @@ External contributors need to fork the repository first (as only maintainers hav
    ```sh
    git clone https://github.com/<your-username>/next-event.git
    cd next-event
-   git remote add upstream https://github.com/tobiasz-p/next-event.git
+   git remote add upstream https://github.com/gabriel-gof/next-event.git
    ```
 3. **Create a feature branch**:
    ```sh

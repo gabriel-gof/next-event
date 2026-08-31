@@ -1,0 +1,66 @@
+#!/bin/bash
+
+set -euo pipefail
+
+if (( $# < 3 || $# > 4 )); then
+  echo "Usage: notify-event <key> <headline> <description> [meeting-url]" >&2
+  exit 2
+fi
+
+notification_key=$1
+headline=$2
+description=$3
+meeting_url=${4:-}
+state_path=${NEXT_EVENT_NOTIFICATION_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/next-event-notifications.json}
+notifier=${NEXT_EVENT_NOTIFY_BIN:-omarchy-notification-send}
+state_dir=${state_path%/*}
+lock_path=${state_path}.lock
+
+umask 077
+mkdir -p "$state_dir"
+exec 9>"$lock_path"
+chmod 600 "$lock_path"
+flock -x 9
+
+if [[ -s $state_path ]] && jq -e --arg key "$notification_key" '
+  (.delivered?[$key] | type) == "number"
+' "$state_path" >/dev/null 2>&1; then
+  exit 0
+fi
+
+notification_args=(
+  --app-name NextEvent
+  -g ""
+  -u normal
+  -t 10000
+  "$headline"
+  "$description"
+)
+if [[ -n $meeting_url ]]; then
+  notification_args+=(--exec xdg-open "$meeting_url")
+fi
+"$notifier" "${notification_args[@]}"
+
+now_ms=$(date +%s%3N)
+cutoff_ms=$((now_ms - 604800000))
+state_tmp=$(mktemp "${state_path}.tmp.XXXXXX")
+
+if [[ -s $state_path ]] && jq -e '(.delivered? | type) == "object"' "$state_path" >/dev/null 2>&1; then
+  jq --arg key "$notification_key" --argjson now "$now_ms" --argjson cutoff "$cutoff_ms" '
+    {
+      version: 1,
+      delivered: (
+        (.delivered // {})
+        | with_entries(select((.value | type) == "number" and .value >= $cutoff))
+        | . + {($key): $now}
+      )
+    }
+  ' "$state_path" >"$state_tmp"
+else
+  jq -n --arg key "$notification_key" --argjson now "$now_ms" '
+    {version: 1, delivered: {($key): $now}}
+  ' >"$state_tmp"
+fi
+
+chmod 600 "$state_tmp"
+mv "$state_tmp" "$state_path"

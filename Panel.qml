@@ -9,7 +9,7 @@ import "components"
 // then the upcoming multi-day list. Also hosts setup instructions when unconfigured.
 Panel {
   id: root
-  moduleName: "tobiasz-p.next-event"
+  moduleName: "gabriel.next-event"
   manageIpc: false
 
   property var anchorItem: null

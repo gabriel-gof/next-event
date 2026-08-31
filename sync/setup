@@ -354,7 +354,7 @@ SYSTEMD_SRC="$SCRIPT_DIR/systemd"
 mkdir -p "$SYSTEMD_USER_DIR"
 
 sed \
-  -e "s|%h/.config/omarchy/plugins/tobiasz-p.next-event/sync/next-event-sync|$SYNC_BIN|g" \
+  -e "s|%h/.config/omarchy/plugins/gabriel.next-event/sync/next-event-sync|$SYNC_BIN|g" \
   -e "s|%h/.config/gws-omarchy-calendar|$PROFILE|g" \
   -e "s|%h/.local/state/omarchy|$HOME/.local/state/omarchy|g" \
   "$SYSTEMD_SRC/next-event-sync.service" \
@@ -369,7 +369,7 @@ if command -v systemctl >/dev/null 2>&1; then
 fi
 
 if command -v omarchy >/dev/null 2>&1; then
-  omarchy bar set tobiasz-p.next-event icsUrl "" 2>/dev/null || true
+  omarchy bar set gabriel.next-event icsUrl "" 2>/dev/null || true
 fi
 
 gum style \

@@ -1,20 +1,23 @@
 {
   "schemaVersion": 1,
-  "id": "tobiasz-p.next-event",
-  "name": "NextEvent",
-  "version": "1.4.1",
-  "author": "tobiasz-p",
+  "id": "gabriel.next-event",
+  "name": "Compact NextEvent",
+  "version": "1.0.0",
+  "author": "gabriel-gof",
   "license": "MIT",
-  "description": "Next event in the bar — Google Calendar feed, click to join Google Meet.",
+  "description": "Quiet calendar camera indicator with color states and 30/10-minute reminders.",
   "kinds": ["bar-widget"],
   "entryPoints": {
     "barWidget": "BarWidget.qml"
   },
   "barWidget": {
-    "displayName": "NextEvent",
-    "description": "Shows the next upcoming event (e.g. \"Daily in 15 min\") and joins Google Meet calls",
+    "displayName": "Compact NextEvent",
+    "description": "Shows a color-coded camera icon, reminders, and event details on demand",
     "category": "Productivity",
     "allowMultiple": false,
     "defaultSection": "right"
+  },
+  "omarchy": {
+    "clonedFrom": "tobiasz-p.next-event"
   }
 }

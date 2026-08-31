@@ -40,7 +40,7 @@ Tests cover domain JS only; the QML layer has no automated coverage.
 ## Workflow conventions
 
 - Contributions follow Conventional Commits (`feat:`, `fix:`, `docs:`, ...) with a mandatory body explaining *why* (the problem being solved, rationale, and design decisions), and a strictly linear history (rebase, no merge commits). See README's Contributing section.
-- Widget settings are configured via `omarchy bar set tobiasz-p.next-event <key> <value>`; defaults live in the README table (e.g. `icsUrl`, `refreshMinutes`, `showDaysAhead`).
+- Widget settings are configured via `omarchy bar set gabriel.next-event <key> <value>`; defaults live in the README table (e.g. `icsUrl`, `refreshMinutes`, `showDaysAhead`).
 
 ## Releasing
 
@@ -50,20 +50,20 @@ Tests cover domain JS only; the QML layer has no automated coverage.
   `git tag -a X.Y.Z -m "X.Y.Z" && git push origin main X.Y.Z`
 - Create the GitHub release with notes covering changes since the previous tag:
   `gh release create X.Y.Z --title "X.Y.Z" --notes "..."`
-- Ask for marketplace verification with a `[Verify]` issue on HANCORE-linux/omarchy-plugin-marketplace (verify-plugin.yml template): action "Verify and publish a newer upstream commit", plugin ID `tobiasz-p.next-event`, repo URL `https://github.com/tobiasz-p/next-event`, and the full 40-char SHA of the release commit. A bot validates, runs a security baseline, then a maintainer applies `approved-and-verified` and publishes that exact snapshot.
+- Ask for marketplace verification with a `[Verify]` issue on HANCORE-linux/omarchy-plugin-marketplace (verify-plugin.yml template): action "Verify and publish a newer upstream commit", plugin ID `gabriel.next-event`, repo URL `https://github.com/gabriel-gof/next-event`, and the full 40-char SHA of the release commit. A bot validates, runs a security baseline, then a maintainer applies `approved-and-verified` and publishes that exact snapshot.
   Create the issue with:
   ```
-  gh issue create --repo HANCORE-linux/omarchy-plugin-marketplace --title "[Verify] tobiasz-p.next-event X.Y.Z" --body "### Verification action
+  gh issue create --repo HANCORE-linux/omarchy-plugin-marketplace --title "[Verify] gabriel.next-event X.Y.Z" --body "### Verification action
 
   Verify and publish a newer upstream commit
 
   ### Plugin ID
 
-  tobiasz-p.next-event
+  gabriel.next-event
 
   ### Repository URL
 
-  https://github.com/tobiasz-p/next-event
+  https://github.com/gabriel-gof/next-event
 
   ### Target commit
 

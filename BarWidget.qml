@@ -5,16 +5,14 @@ import qs.Commons
 import qs.Ui
 import "Model.js" as Model
 
-// NextEvent — the next event, right in the bar.
+// Compact NextEvent — a quiet camera indicator with details on demand.
 //
 // Left click opens the meeting list; right click joins the next meeting;
-// middle click refetches the calendar. When there is nothing actionable
-// (no feed configured, or no upcoming meeting) the widget shrinks to a
-// muted camera glyph that still opens the panel — which is where the
-// setup instructions live.
+// middle click refetches the calendar. Color carries urgency while the
+// event title and countdown stay in the panel and tooltip.
 BarWidget {
   id: root
-  moduleName: "tobiasz-p.next-event"
+  moduleName: "gabriel.next-event"
 
   // ---- settings (shell.json layout entry, `omarchy bar set`)
   // icsUrl is a feed list: "url", "url1,url2", "label|url" per feed
@@ -49,6 +47,7 @@ BarWidget {
   readonly property int maxRawEvents: Model.DEFAULT_MAX_EVENTS
   readonly property int maxMeetingRows: Model.DEFAULT_MAX_MEETING_ROWS
   readonly property int maxScheduleRows: Model.DEFAULT_MAX_ROWS
+  readonly property string notifierPath: Qt.resolvedUrl("notify-event").toString().replace("file://", "")
 
   // ---- state
   property bool jsonLoaded: false
@@ -70,6 +69,7 @@ BarWidget {
   property int offlineFeedCount: 0
   readonly property bool fetching: fetchProc.running || syncProc.running
   property date now: new Date()
+  property var attemptedNotificationKeys: ({})
 
   // Internal fetch-loop state (populated by fetchCalendar).
   property var pendingFeeds: []
@@ -80,7 +80,13 @@ BarWidget {
   property string currentFeedColor: ""
   property string feedOutput: ""
 
-  readonly property string label: Model.barLabel(root.configured, root.nextMeeting, root.now, root.maxTitleLength, root.use12Hour)
+  readonly property string compactState: Model.compactBarState(root.nextMeeting, root.now)
+  readonly property color compactColor: compactState === "ongoing" ? "#fb7185"
+    : compactState === "imminent" ? "#fb923c"
+    : compactState === "soon" ? "#facc15"
+    : compactState === "scheduled" ? "#60a5fa"
+    : (root.bar ? root.bar.barForeground : Color.foreground)
+  readonly property string label: Model.ICON_MEETING_VIDEO
   readonly property bool inMeeting: nextMeeting
     && !nextMeeting.allDay
     && nextMeeting.start && nextMeeting.end
@@ -108,6 +114,26 @@ BarWidget {
     if (!event) return
     if (event.meetUrl) openMeetingUrl(event.meetUrl)
     else openCalendar(event)
+  }
+
+  function maybeNotify() {
+    var milestone = Model.notificationMilestone(root.nextMeeting, root.now)
+    if (!milestone) return
+
+    var key = Model.notificationKey(root.nextMeeting, milestone)
+    if (!key || root.attemptedNotificationKeys[key]) return
+    var payload = Model.notificationPayload(root.nextMeeting, milestone, root.use12Hour)
+    if (!payload) return
+
+    var nextAttempts = {}
+    for (var existingKey in root.attemptedNotificationKeys)
+      nextAttempts[existingKey] = root.attemptedNotificationKeys[existingKey]
+    nextAttempts[key] = true
+    root.attemptedNotificationKeys = nextAttempts
+
+    var args = [root.notifierPath, key, payload.headline, payload.description]
+    if (root.nextMeeting.meetUrl) args.push(root.nextMeeting.meetUrl)
+    Quickshell.execDetached(args)
   }
 
   // The feed URL is a credential (e.g. Google's "secret address in iCal
@@ -198,6 +224,7 @@ BarWidget {
     root.calendarLegend = state.calendarLegend || []
     if (lastUpdatedDate) root.lastUpdated = lastUpdatedDate
     root.meetingDataChanged()
+    root.maybeNotify()
   }
 
   function finishFetch() {
@@ -366,15 +393,13 @@ BarWidget {
     id: button
     anchors.fill: parent
     bar: root.bar
-    text: root.label !== "" ? root.label : Model.ICON_CALENDAR_EMPTY
-    foreground: root.useCalendarColors && root.colorOnBar && root.nextMeeting && root.nextMeeting.calendarColor
-      ? root.nextMeeting.calendarColor
-      : (root.bar ? root.bar.barForeground : Color.foreground)
+    text: root.label
+    foreground: root.compactColor
     labelVisible: true
     hasVisualContent: true
-    dimmed: root.label === ""
+    dimmed: root.compactState === "idle"
     active: root.inMeeting
-    useActiveColor: !(root.useCalendarColors && root.colorOnBar)
+    useActiveColor: false
     horizontalMargin: 8.75
     verticalPadding: 8.75
     tooltipText: root.tooltipLine

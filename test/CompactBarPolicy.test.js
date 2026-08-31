@@ -1,0 +1,89 @@
+"use strict"
+
+const { describe, it } = require("node:test")
+const assert = require("node:assert/strict")
+const { CompactBarPolicy, CalendarEvent } = require("../Model.js")
+
+describe("CompactBarPolicy", () => {
+  const start = new Date(2026, 7, 31, 11, 0, 0)
+  const event = new CalendarEvent({
+    uid: "weekly-review",
+    title: "Weekly Review",
+    start,
+    end: new Date(2026, 7, 31, 12, 0, 0),
+    allDay: false,
+    meetUrl: "https://meet.google.com/abc-defg-hij"
+  })
+
+  function minutesBefore(minutes) {
+    return new Date(start.getTime() - minutes * 60 * 1000)
+  }
+
+  describe("state()", () => {
+    it("maps a timed event to the compact bar urgency bands", () => {
+      assert.strictEqual(CompactBarPolicy.state(event, minutesBefore(31)), "scheduled")
+      assert.strictEqual(CompactBarPolicy.state(event, minutesBefore(30)), "soon")
+      assert.strictEqual(CompactBarPolicy.state(event, minutesBefore(10)), "imminent")
+      assert.strictEqual(CompactBarPolicy.state(event, start), "ongoing")
+    })
+
+    it("treats missing and all-day events as idle", () => {
+      const allDay = new CalendarEvent({
+        uid: "holiday",
+        title: "Holiday",
+        start: new Date(2026, 7, 31, 0, 0, 0),
+        end: new Date(2026, 8, 1, 0, 0, 0),
+        allDay: true
+      })
+
+      assert.strictEqual(CompactBarPolicy.state(null, minutesBefore(31)), "idle")
+      assert.strictEqual(CompactBarPolicy.state(allDay, minutesBefore(31)), "idle")
+    })
+  })
+
+  describe("notificationMilestone()", () => {
+    it("selects only the current 30-minute or 10-minute reminder band", () => {
+      assert.strictEqual(CompactBarPolicy.notificationMilestone(event, minutesBefore(31)), null)
+      assert.strictEqual(CompactBarPolicy.notificationMilestone(event, minutesBefore(29)), 30)
+      assert.strictEqual(CompactBarPolicy.notificationMilestone(event, minutesBefore(10)), 10)
+      assert.strictEqual(CompactBarPolicy.notificationMilestone(event, minutesBefore(5)), 10)
+      assert.strictEqual(CompactBarPolicy.notificationMilestone(event, start), null)
+    })
+
+    it("never notifies for all-day events", () => {
+      const allDay = new CalendarEvent({
+        uid: "offsite",
+        title: "Offsite",
+        start: new Date(2026, 7, 31, 0, 0, 0),
+        end: new Date(2026, 8, 1, 0, 0, 0),
+        allDay: true
+      })
+
+      assert.strictEqual(CompactBarPolicy.notificationMilestone(allDay, minutesBefore(10)), null)
+    })
+  })
+
+  describe("notification identity and content", () => {
+    it("uses the occurrence and milestone to make stable distinct keys", () => {
+      assert.strictEqual(
+        CompactBarPolicy.notificationKey(event, 30),
+        "weekly-review|1788184800000|30"
+      )
+      assert.strictEqual(
+        CompactBarPolicy.notificationKey(event, 10),
+        "weekly-review|1788184800000|10"
+      )
+    })
+
+    it("builds concise notification content", () => {
+      assert.deepStrictEqual(CompactBarPolicy.notificationPayload(event, 30, false), {
+        headline: "Weekly Review",
+        description: "Starts in 30 minutes · 11:00"
+      })
+      assert.deepStrictEqual(CompactBarPolicy.notificationPayload(event, 10, true), {
+        headline: "Weekly Review",
+        description: "Starts in 10 minutes · 11:00 AM"
+      })
+    })
+  })
+})
