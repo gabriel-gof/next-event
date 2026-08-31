@@ -27,7 +27,7 @@ describe("notify-event", () => {
       NEXT_EVENT_TEST_LOG: logPath
     }
     const args = [
-      "weekly-review|1788184800000|30",
+      "Weekly Review|1788184800000|30",
       "Weekly Review",
       "Starts in 30 minutes · 11:00",
       "https://meet.google.com/abc-defg-hij"
@@ -52,12 +52,16 @@ describe("notify-event", () => {
       0,
       second.error ? second.error.message : String(second.stderr || "")
     )
-    assert.strictEqual(readFileSync(logPath, "utf8").trim().split("\n").length, 1)
+    const notificationLog = readFileSync(logPath, "utf8").trim()
+    assert.strictEqual(notificationLog.split("\n").length, 1)
+    assert.match(notificationLog, /Event: Weekly Review/)
     assert.strictEqual(statSync(statePath).mode & 0o777, 0o600)
-    assert.strictEqual(
-      JSON.parse(readFileSync(statePath, "utf8")).delivered["weekly-review|1788184800000|30"] > 0,
-      true
-    )
+    const stateText = readFileSync(statePath, "utf8")
+    const state = JSON.parse(stateText)
+    const deliveredKeys = Object.keys(state.delivered)
+    assert.strictEqual(deliveredKeys.length, 1)
+    assert.match(deliveredKeys[0], /^[a-f0-9]{64}$/)
+    assert.strictEqual(stateText.includes("Weekly Review"), false)
   })
 
   it("serializes simultaneous monitor attempts into one notification", async t => {
@@ -92,5 +96,36 @@ describe("notify-event", () => {
     ])
 
     assert.strictEqual(readFileSync(logPath, "utf8").trim().split("\n").length, 1)
+  })
+
+  it("turns an option-like event title into notifier text", t => {
+    const dir = mkdtempSync(join(tmpdir(), "next-event-notify-option-"))
+    t.after(() => rmSync(dir, { recursive: true, force: true }))
+    const statePath = join(dir, "notifications.json")
+    const logPath = join(dir, "notifications.log")
+    const fakeNotifier = join(dir, "fake-notifier")
+    writeFileSync(fakeNotifier, '#!/bin/sh\nprintf "%s\\n" "$*" >> "$NEXT_EVENT_TEST_LOG"\n')
+    chmodSync(fakeNotifier, 0o700)
+
+    const result = spawnSync(
+      join(__dirname, "..", "notify-event"),
+      ["option-title|1788184800000|10", "-g", "Starts in 10 minutes · 11:00"],
+      {
+        env: {
+          ...process.env,
+          NEXT_EVENT_NOTIFICATION_STATE: statePath,
+          NEXT_EVENT_NOTIFY_BIN: fakeNotifier,
+          NEXT_EVENT_TEST_LOG: logPath
+        },
+        encoding: "utf8"
+      }
+    )
+
+    assert.strictEqual(
+      result.status,
+      0,
+      result.error ? result.error.message : String(result.stderr || "")
+    )
+    assert.match(readFileSync(logPath, "utf8"), /Event: -g/)
   })
 })

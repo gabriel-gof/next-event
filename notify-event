@@ -11,6 +11,9 @@ notification_key=$1
 headline=$2
 description=$3
 meeting_url=${4:-}
+notification_key_hash=$(printf '%s' "$notification_key" | sha256sum)
+notification_key_hash=${notification_key_hash%% *}
+notification_headline="Event: $headline"
 state_path=${NEXT_EVENT_NOTIFICATION_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/next-event-notifications.json}
 notifier=${NEXT_EVENT_NOTIFY_BIN:-omarchy-notification-send}
 state_dir=${state_path%/*}
@@ -22,7 +25,7 @@ exec 9>"$lock_path"
 chmod 600 "$lock_path"
 flock -x 9
 
-if [[ -s $state_path ]] && jq -e --arg key "$notification_key" '
+if [[ -s $state_path ]] && jq -e --arg key "$notification_key_hash" '
   (.delivered?[$key] | type) == "number"
 ' "$state_path" >/dev/null 2>&1; then
   exit 0
@@ -33,7 +36,7 @@ notification_args=(
   -g ""
   -u normal
   -t 10000
-  "$headline"
+  "$notification_headline"
   "$description"
 )
 if [[ -n $meeting_url ]]; then
@@ -46,7 +49,7 @@ cutoff_ms=$((now_ms - 604800000))
 state_tmp=$(mktemp "${state_path}.tmp.XXXXXX")
 
 if [[ -s $state_path ]] && jq -e '(.delivered? | type) == "object"' "$state_path" >/dev/null 2>&1; then
-  jq --arg key "$notification_key" --argjson now "$now_ms" --argjson cutoff "$cutoff_ms" '
+  jq --arg key "$notification_key_hash" --argjson now "$now_ms" --argjson cutoff "$cutoff_ms" '
     {
       version: 1,
       delivered: (
@@ -57,7 +60,7 @@ if [[ -s $state_path ]] && jq -e '(.delivered? | type) == "object"' "$state_path
     }
   ' "$state_path" >"$state_tmp"
 else
-  jq -n --arg key "$notification_key" --argjson now "$now_ms" '
+  jq -n --arg key "$notification_key_hash" --argjson now "$now_ms" '
     {version: 1, delivered: {($key): $now}}
   ' >"$state_tmp"
 fi

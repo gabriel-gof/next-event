@@ -1907,10 +1907,47 @@ class CompactBarPolicy {
   }
 
   static notificationMilestone(event, now) {
-    var state = CompactBarPolicy.state(event, now)
-    if (state === "imminent") return 10
-    if (state === "soon") return 30
+    now = now || new Date()
+    if (!CompactBarPolicy.isTimedEvent(event)) return null
+    var remainingMs = event.start.getTime() - now.getTime()
+    if (remainingMs <= 0) return null
+
+    var tenMinuteMs = 10 * MS_PER_MINUTE
+    var thirtyMinuteMs = 30 * MS_PER_MINUTE
+    if (remainingMs <= tenMinuteMs && remainingMs >= tenMinuteMs - MS_PER_MINUTE) return 10
+    if (remainingMs <= thirtyMinuteMs && remainingMs >= thirtyMinuteMs - MS_PER_MINUTE) return 30
     return null
+  }
+
+  static timedEvents(events, now) {
+    now = now || new Date()
+    var nowMs = now.getTime()
+    var timed = []
+    for (var i = 0; i < (events || []).length; i++) {
+      var event = events[i]
+      if (!CompactBarPolicy.isTimedEvent(event)) continue
+      if (event.end.getTime() <= nowMs) continue
+      timed.push(event)
+    }
+    timed.sort(function (left, right) {
+      return ScheduleAggregator.compareUpcoming(left, right, now)
+    })
+    return timed
+  }
+
+  static nextTimedEvent(events, now) {
+    var timed = CompactBarPolicy.timedEvents(events, now)
+    return timed.length > 0 ? timed[0] : null
+  }
+
+  static notificationCandidates(events, now) {
+    var timed = CompactBarPolicy.timedEvents(events, now)
+    var candidates = []
+    for (var i = 0; i < timed.length; i++) {
+      var milestone = CompactBarPolicy.notificationMilestone(timed[i], now)
+      if (milestone) candidates.push({ event: timed[i], milestone: milestone })
+    }
+    return candidates
   }
 
   static notificationKey(event, milestone) {
@@ -1919,13 +1956,18 @@ class CompactBarPolicy {
     return identity + "|" + event.start.getTime() + "|" + milestone
   }
 
-  static notificationPayload(event, milestone, use12Hour) {
+  static notificationPayload(event, milestone, now, use12Hour) {
     if (!CompactBarPolicy.isTimedEvent(event) || (milestone !== 30 && milestone !== 10)) return null
+    now = now || new Date()
+    var remainingMinutes = Math.max(
+      1,
+      Math.round((event.start.getTime() - now.getTime()) / MS_PER_MINUTE)
+    )
     return {
       headline: String(event.title || LABEL_UNTITLED),
       description:
         "Starts in " +
-        milestone +
+        remainingMinutes +
         " minutes · " +
         DisplayFormatter.hm(event.start, use12Hour === true)
     }
@@ -2387,14 +2429,20 @@ function isEventAllDay(event) {
 function compactBarState(event, now) {
   return CompactBarPolicy.state(event, now)
 }
+function nextTimedEvent(events, now) {
+  return CompactBarPolicy.nextTimedEvent(events, now)
+}
+function notificationCandidates(events, now) {
+  return CompactBarPolicy.notificationCandidates(events, now)
+}
 function notificationMilestone(event, now) {
   return CompactBarPolicy.notificationMilestone(event, now)
 }
 function notificationKey(event, milestone) {
   return CompactBarPolicy.notificationKey(event, milestone)
 }
-function notificationPayload(event, milestone, use12Hour) {
-  return CompactBarPolicy.notificationPayload(event, milestone, use12Hour)
+function notificationPayload(event, milestone, now, use12Hour) {
+  return CompactBarPolicy.notificationPayload(event, milestone, now, use12Hour)
 }
 function parseTimeFormat(value) {
   return FeedConfigParser.parseTimeFormat(value)
@@ -2473,6 +2521,8 @@ if (typeof module !== "undefined" && module.exports) {
     daySectionTitle: daySectionTitle,
     isEventAllDay: isEventAllDay,
     compactBarState: compactBarState,
+    nextTimedEvent: nextTimedEvent,
+    notificationCandidates: notificationCandidates,
     notificationMilestone: notificationMilestone,
     notificationKey: notificationKey,
     notificationPayload: notificationPayload

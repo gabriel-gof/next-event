@@ -62,6 +62,7 @@ BarWidget {
   property var scheduleGroups: []
   property var calendarLegend: []
   property var nextMeeting: null
+  property var compactEvent: null
   property date lastUpdated: new Date(0)
   property bool lastFetchFailed: false
   // Number of feeds that failed on the last fetch while *some* succeeded;
@@ -69,7 +70,6 @@ BarWidget {
   property int offlineFeedCount: 0
   readonly property bool fetching: fetchProc.running || syncProc.running
   property date now: new Date()
-  property var attemptedNotificationKeys: ({})
 
   // Internal fetch-loop state (populated by fetchCalendar).
   property var pendingFeeds: []
@@ -80,7 +80,7 @@ BarWidget {
   property string currentFeedColor: ""
   property string feedOutput: ""
 
-  readonly property string compactState: Model.compactBarState(root.nextMeeting, root.now)
+  readonly property string compactState: Model.compactBarState(root.compactEvent, root.now)
   readonly property color compactColor: compactState === "ongoing" ? "#fb7185"
     : compactState === "imminent" ? "#fb923c"
     : compactState === "soon" ? "#facc15"
@@ -116,24 +116,18 @@ BarWidget {
     else openCalendar(event)
   }
 
-  function maybeNotify() {
-    var milestone = Model.notificationMilestone(root.nextMeeting, root.now)
-    if (!milestone) return
+  function maybeNotifyAll() {
+    var candidates = Model.notificationCandidates(root.rawEvents, root.now)
+    for (var i = 0; i < candidates.length; i++) {
+      var candidate = candidates[i]
+      var key = Model.notificationKey(candidate.event, candidate.milestone)
+      var payload = Model.notificationPayload(candidate.event, candidate.milestone, root.now, root.use12Hour)
+      if (!key || !payload) continue
 
-    var key = Model.notificationKey(root.nextMeeting, milestone)
-    if (!key || root.attemptedNotificationKeys[key]) return
-    var payload = Model.notificationPayload(root.nextMeeting, milestone, root.use12Hour)
-    if (!payload) return
-
-    var nextAttempts = {}
-    for (var existingKey in root.attemptedNotificationKeys)
-      nextAttempts[existingKey] = root.attemptedNotificationKeys[existingKey]
-    nextAttempts[key] = true
-    root.attemptedNotificationKeys = nextAttempts
-
-    var args = [root.notifierPath, key, payload.headline, payload.description]
-    if (root.nextMeeting.meetUrl) args.push(root.nextMeeting.meetUrl)
-    Quickshell.execDetached(args)
+      var args = [root.notifierPath, key, payload.headline, payload.description]
+      if (candidate.event.meetUrl) args.push(candidate.event.meetUrl)
+      Quickshell.execDetached(args)
+    }
   }
 
   // The feed URL is a credential (e.g. Google's "secret address in iCal
@@ -221,10 +215,11 @@ BarWidget {
     root.upcomingToday = state.upcomingToday
     root.scheduleGroups = state.scheduleGroups
     root.nextMeeting = state.nextMeeting
+    root.compactEvent = Model.nextTimedEvent(root.rawEvents, root.now)
     root.calendarLegend = state.calendarLegend || []
     if (lastUpdatedDate) root.lastUpdated = lastUpdatedDate
     root.meetingDataChanged()
-    root.maybeNotify()
+    root.maybeNotifyAll()
   }
 
   function finishFetch() {

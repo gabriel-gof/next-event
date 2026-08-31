@@ -42,11 +42,14 @@ describe("CompactBarPolicy", () => {
   })
 
   describe("notificationMilestone()", () => {
-    it("selects only the current 30-minute or 10-minute reminder band", () => {
+    it("selects only the 60-second window after each reminder threshold", () => {
       assert.strictEqual(CompactBarPolicy.notificationMilestone(event, minutesBefore(31)), null)
-      assert.strictEqual(CompactBarPolicy.notificationMilestone(event, minutesBefore(29)), 30)
+      assert.strictEqual(CompactBarPolicy.notificationMilestone(event, minutesBefore(30)), 30)
+      assert.strictEqual(CompactBarPolicy.notificationMilestone(event, minutesBefore(29.5)), 30)
+      assert.strictEqual(CompactBarPolicy.notificationMilestone(event, minutesBefore(28)), null)
       assert.strictEqual(CompactBarPolicy.notificationMilestone(event, minutesBefore(10)), 10)
-      assert.strictEqual(CompactBarPolicy.notificationMilestone(event, minutesBefore(5)), 10)
+      assert.strictEqual(CompactBarPolicy.notificationMilestone(event, minutesBefore(9.5)), 10)
+      assert.strictEqual(CompactBarPolicy.notificationMilestone(event, minutesBefore(8)), null)
       assert.strictEqual(CompactBarPolicy.notificationMilestone(event, start), null)
     })
 
@@ -76,14 +79,70 @@ describe("CompactBarPolicy", () => {
     })
 
     it("builds concise notification content", () => {
-      assert.deepStrictEqual(CompactBarPolicy.notificationPayload(event, 30, false), {
-        headline: "Weekly Review",
-        description: "Starts in 30 minutes · 11:00"
+      assert.deepStrictEqual(
+        CompactBarPolicy.notificationPayload(event, 30, minutesBefore(29), false),
+        {
+          headline: "Weekly Review",
+          description: "Starts in 29 minutes · 11:00"
+        }
+      )
+      assert.deepStrictEqual(
+        CompactBarPolicy.notificationPayload(event, 10, minutesBefore(9), true),
+        {
+          headline: "Weekly Review",
+          description: "Starts in 9 minutes · 11:00 AM"
+        }
+      )
+    })
+  })
+
+  describe("timed event selection", () => {
+    it("selects the next timed event instead of an ongoing all-day event", () => {
+      const allDay = new CalendarEvent({
+        uid: "offsite",
+        title: "Offsite",
+        start: new Date(2026, 7, 31, 0, 0, 0),
+        end: new Date(2026, 8, 1, 0, 0, 0),
+        allDay: true
       })
-      assert.deepStrictEqual(CompactBarPolicy.notificationPayload(event, 10, true), {
-        headline: "Weekly Review",
-        description: "Starts in 10 minutes · 11:00 AM"
+
+      assert.strictEqual(
+        CompactBarPolicy.nextTimedEvent([allDay, event], new Date(2026, 7, 31, 9, 0)),
+        event
+      )
+    })
+
+    it("returns every timed event currently due for a reminder", () => {
+      const secondEvent = new CalendarEvent({
+        uid: "product-sync",
+        title: "Product Sync",
+        start: new Date(2026, 7, 31, 11, 20, 0),
+        end: new Date(2026, 7, 31, 12, 0, 0),
+        allDay: false
       })
+      const allDay = new CalendarEvent({
+        uid: "holiday",
+        title: "Holiday",
+        start: new Date(2026, 7, 31, 0, 0, 0),
+        end: new Date(2026, 8, 1, 0, 0, 0),
+        allDay: true
+      })
+
+      assert.deepStrictEqual(
+        CompactBarPolicy.notificationCandidates(
+          [allDay, secondEvent, event],
+          new Date(2026, 7, 31, 10, 50, 0)
+        ),
+        [
+          { event, milestone: 10 },
+          { event: secondEvent, milestone: 30 }
+        ]
+      )
+    })
+
+    it("keeps a milestone eligible on the next 30-second tick for retry", () => {
+      assert.strictEqual(CompactBarPolicy.notificationMilestone(event, minutesBefore(30)), 30)
+      assert.strictEqual(CompactBarPolicy.notificationMilestone(event, minutesBefore(29.5)), 30)
     })
   })
 })
