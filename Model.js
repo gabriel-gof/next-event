@@ -1907,6 +1907,14 @@ class CompactBarPolicy {
     return "scheduled"
   }
 
+  static color(state) {
+    if (state === "ongoing") return "#fb7185"
+    if (state === "imminent") return "#fb923c"
+    if (state === "soon") return "#facc15"
+    if (state === "scheduled") return "#60a5fa"
+    return "#4ade80"
+  }
+
   static notificationMilestone(event, now) {
     now = now || new Date()
     if (!CompactBarPolicy.isTimedEvent(event)) return null
@@ -2430,6 +2438,9 @@ function isEventAllDay(event) {
 function compactBarState(event, now) {
   return CompactBarPolicy.state(event, now)
 }
+function compactBarColor(state) {
+  return CompactBarPolicy.color(state)
+}
 function nextTimedEvent(events, now) {
   return CompactBarPolicy.nextTimedEvent(events, now)
 }
@@ -2522,6 +2533,7 @@ if (typeof module !== "undefined" && module.exports) {
     daySectionTitle: daySectionTitle,
     isEventAllDay: isEventAllDay,
     compactBarState: compactBarState,
+    compactBarColor: compactBarColor,
     nextTimedEvent: nextTimedEvent,
     notificationCandidates: notificationCandidates,
     notificationMilestone: notificationMilestone,

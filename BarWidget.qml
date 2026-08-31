@@ -81,11 +81,7 @@ BarWidget {
   property string feedOutput: ""
 
   readonly property string compactState: Model.compactBarState(root.compactEvent, root.now)
-  readonly property color compactColor: compactState === "ongoing" ? "#fb7185"
-    : compactState === "imminent" ? "#fb923c"
-    : compactState === "soon" ? "#facc15"
-    : compactState === "scheduled" ? "#60a5fa"
-    : (root.bar ? root.bar.barForeground : Color.foreground)
+  readonly property color compactColor: Model.compactBarColor(root.compactState)
   readonly property string label: Model.ICON_MEETING_VIDEO
   readonly property bool inMeeting: nextMeeting
     && !nextMeeting.allDay
@@ -392,7 +388,7 @@ BarWidget {
     foreground: root.compactColor
     labelVisible: true
     hasVisualContent: true
-    dimmed: root.compactState === "idle"
+    dimmed: false
     active: root.inMeeting
     useActiveColor: false
     horizontalMargin: 8.75

@@ -40,7 +40,7 @@ describe("CompactBarPolicy", () => {
       assert.strictEqual(CompactBarPolicy.state(allDay, minutesBefore(31)), "idle")
     })
 
-    it("keeps tomorrow's events gray today", () => {
+    it("keeps tomorrow's events idle today", () => {
       const tomorrowEvent = new CalendarEvent({
         uid: "tomorrow-sync",
         title: "Tomorrow Sync",
@@ -67,6 +67,17 @@ describe("CompactBarPolicy", () => {
       assert.strictEqual(
         CompactBarPolicy.state(overnightEvent, new Date(2026, 8, 1, 0, 10, 0)),
         "ongoing"
+      )
+    })
+  })
+
+  describe("color()", () => {
+    it("maps the five status states to their approved signal colors", () => {
+      assert.deepStrictEqual(
+        ["idle", "scheduled", "soon", "imminent", "ongoing"].map(state =>
+          CompactBarPolicy.color(state)
+        ),
+        ["#4ade80", "#60a5fa", "#facc15", "#fb923c", "#fb7185"]
       )
     })
   })
