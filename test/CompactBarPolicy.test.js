@@ -39,6 +39,36 @@ describe("CompactBarPolicy", () => {
       assert.strictEqual(CompactBarPolicy.state(null, minutesBefore(31)), "idle")
       assert.strictEqual(CompactBarPolicy.state(allDay, minutesBefore(31)), "idle")
     })
+
+    it("keeps tomorrow's events gray today", () => {
+      const tomorrowEvent = new CalendarEvent({
+        uid: "tomorrow-sync",
+        title: "Tomorrow Sync",
+        start: new Date(2026, 8, 1, 0, 10, 0),
+        end: new Date(2026, 8, 1, 1, 0, 0),
+        allDay: false
+      })
+
+      assert.strictEqual(
+        CompactBarPolicy.state(tomorrowEvent, new Date(2026, 7, 31, 23, 50, 0)),
+        "idle"
+      )
+    })
+
+    it("keeps a cross-midnight event pink while it is happening", () => {
+      const overnightEvent = new CalendarEvent({
+        uid: "overnight-maintenance",
+        title: "Overnight Maintenance",
+        start: new Date(2026, 7, 31, 23, 30, 0),
+        end: new Date(2026, 8, 1, 0, 30, 0),
+        allDay: false
+      })
+
+      assert.strictEqual(
+        CompactBarPolicy.state(overnightEvent, new Date(2026, 8, 1, 0, 10, 0)),
+        "ongoing"
+      )
+    })
   })
 
   describe("notificationMilestone()", () => {

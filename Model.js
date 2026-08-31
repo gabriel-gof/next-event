@@ -1899,6 +1899,7 @@ class CompactBarPolicy {
     var endMs = event.end.getTime()
     if (nowMs >= endMs) return "idle"
     if (nowMs >= startMs) return "ongoing"
+    if (!DateTimeUtils.isSameDay(event.start, now)) return "idle"
 
     var minutesUntil = (startMs - nowMs) / MS_PER_MINUTE
     if (minutesUntil <= 10) return "imminent"
