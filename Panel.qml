@@ -25,6 +25,10 @@ Panel {
   property var scheduleGroups: []
   property var calendarLegend: []
   property var next: null
+  // The next meeting overall vs. the one the hero card is currently entitled to
+  // show. They differ outside the lead window, where next still drives the m/o
+  // shortcuts (matching the bar's right-click join) but the card stays hidden.
+  property var heroEvent: null
   property date now: hostWidget ? hostWidget.now : new Date()
   property bool inSettingsView: false
 
@@ -74,15 +78,16 @@ Panel {
     root.scheduleGroups = root.hostWidget.scheduleGroups || []
     root.calendarLegend = root.hostWidget.calendarLegend || []
     root.next = root.hostWidget.nextMeeting || null
+    root.heroEvent = root.hostWidget.heroEvent || null
 
     var configured = !!root.hostWidget.configured
     setupGuide.visible = !root.inSettingsView && !configured
-    heroCard.visible = !root.inSettingsView && configured && !!root.next
-    // The hero card counts as content: with a single upcoming event the agenda
-    // list is legitimately empty, and claiming "no upcoming meetings" directly
-    // under a rendered meeting contradicts the card above it.
+    heroCard.visible = !root.inSettingsView && configured && !!root.heroEvent
+    // The hero card counts as content: while it is showing, the agenda list is
+    // legitimately empty, and claiming "no upcoming meetings" directly under a
+    // rendered meeting contradicts the card above it.
     emptySchedule.visible =
-      !root.inSettingsView && configured && root.scheduleGroups.length === 0 && !root.next
+      !root.inSettingsView && configured && root.scheduleGroups.length === 0 && !heroCard.visible
     scheduleContainer.visible = !root.inSettingsView && configured && root.scheduleGroups.length > 0
     settingsView.visible = root.inSettingsView
     headerBar.inSettingsView = root.inSettingsView
@@ -111,7 +116,7 @@ Panel {
   property bool cursorActive: false
 
   function rebuildActionItems() {
-    root.actionItems = navModel.rebuildActionItems(heroCard.visible, root.next, root.scheduleGroups, root.inSettingsView)
+    root.actionItems = navModel.rebuildActionItems(heroCard.visible, root.heroEvent, root.scheduleGroups, root.inSettingsView)
     root.cursorIndex = navModel.cursorIndex
     root.cursorActive = navModel.cursorActive
   }
@@ -127,8 +132,8 @@ Panel {
     if (!activeItem) return
     if (activeItem.kind === "refresh") root.refreshNow()
     else if (activeItem.kind === "settings") root.toggleSettingsView()
-    else if (activeItem.kind === "join") root.join(root.next)
-    else if (activeItem.kind === "calendar") root.openInCalendar(root.next)
+    else if (activeItem.kind === "join") root.join(root.heroEvent)
+    else if (activeItem.kind === "calendar") root.openInCalendar(root.heroEvent)
     else if (activeItem.kind === "event") {
       var group = root.scheduleGroups[activeItem.groupIndex]
       if (group) root.join(group.items[activeItem.rowIndex])
@@ -284,7 +289,7 @@ Panel {
           HeroCard {
             id: heroCard
             visible: false
-            next: root.next
+            next: root.heroEvent
             now: root.now
             inMeeting: root.inMeeting
             useCalendarColors: root.useCalendarColors
@@ -293,8 +298,8 @@ Panel {
             contentFontFamily: root.contentFontFamily
             cursorOnJoin: root.cursorOn("join")
             cursorOnCalendar: root.cursorOn("calendar")
-            onJoinRequested: root.join(root.next)
-            onCalendarRequested: root.openInCalendar(root.next)
+            onJoinRequested: root.join(root.heroEvent)
+            onCalendarRequested: root.openInCalendar(root.heroEvent)
             onJoinHovered: function(isHovered) { if (isHovered) root.pointCursorAt("join") }
             onCalendarHovered: function(isHovered) { if (isHovered) root.pointCursorAt("calendar") }
           }

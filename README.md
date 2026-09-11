@@ -66,6 +66,7 @@ project as its upstream source.
 - **Multiple Calendars**: Combine several `.ics` feeds (e.g. work + personal) into one widget. Give each feed a `label|` name so events carry a small tag, shared events are deduplicated, and one offline calendar doesn't hide the rest
 - **Compact Bar Widget**: Always renders one camera glyph instead of an event title or countdown, in the same color as every other bar icon, so it blends into the bar instead of competing with it
 - **Focused Reminders**: Sends one desktop notification around 30 minutes before and another around 10 minutes before each timed event. A 60-second delivery window allows one retry on the next 30-second tick without producing late reminders. All-day entries stay silent, and a private on-disk ledger prevents duplicates across monitors and shell restarts
+- **Focused "Next" Card**: The hero card and its Join button surface 30 minutes before a meeting (configurable via `heroLeadMinutes`) and stay up while it is happening, so the panel's most prominent slot is only spent on a meeting you can actually act on. Anything further out is listed as a normal agenda row instead of being repeated above it
 - **Quick Join & Settings**: Click to open the agenda panel; single click on "Join Meeting" opens the video link (Google Meet, Zoom, Teams, Webex, GoToMeeting) in your default browser; click the Settings button next to Refresh (or press `,`) to customize all options directly in the UI
 - **Instant Actions**: Right-click on the bar widget to join the next meeting immediately; middle-click to force-refresh
 - **Keyboard Navigation**: With the agenda panel open, `↑`/`↓` (or `j`/`k`) move through the refresh and settings buttons, hero actions, and event rows, `Enter`/`Space` activates, `r` refreshes, `,` toggles settings, `m` joins the next meeting, `o` opens it in the calendar, `Tab`/`Shift+Tab` switch panels, `Escape` closes — all scoped to the focused panel so no Omarchy keybinding is ever shadowed
@@ -170,6 +171,7 @@ Configure settings with `omarchy bar set gabriel.next-event <key> <value>`:
 | `eventsJsonPath`      | `~/.local/state/omarchy/calendar-events.json` | Path to the JSON events state file (written by `sync/setup`, `omarchy-calendar`, or custom script) |
 | `refreshMinutes`      | `5`     | How often to refetch feeds in ICS mode              |
 | `showDaysAhead`       | `3`     | How many days ahead to list meetings                |
+| `heroLeadMinutes`     | `30`    | Minutes before a meeting that the "Next" card and its Join button appear; matches the first reminder. Outside this window the meeting shows as an ordinary agenda row. An ongoing meeting always keeps the card. `0` shows it only once the meeting has started |
 | `maxTitleLength`      | `28`    | Legacy upstream setting; the compact bar does not render titles |
 | `timeFormat`          | `24`    | Time display format: `24` (24-hour) or `12` (AM/PM) |
 | `maxFeedSizeMiB`      | `10`    | Maximum size of each downloaded calendar feed (MiB) |

@@ -208,6 +208,56 @@ describe("ScheduleAggregator", () => {
     })
   })
 
+  describe("heroEvent()", () => {
+    it("withholds the card until the meeting enters the lead window", () => {
+      // now is 09:00; Daily Standup starts at 10:00.
+      assert.strictEqual(ScheduleAggregator.heroEvent(todayTimed1, now, 30), null)
+      assert.strictEqual(
+        ScheduleAggregator.heroEvent(todayTimed1, new Date(2026, 7, 28, 9, 29), 30),
+        null
+      )
+      assert.strictEqual(
+        ScheduleAggregator.heroEvent(todayTimed1, new Date(2026, 7, 28, 9, 30), 30),
+        todayTimed1
+      )
+    })
+
+    it("keeps the card up for a meeting that is already under way", () => {
+      assert.strictEqual(
+        ScheduleAggregator.heroEvent(todayTimed1, new Date(2026, 7, 28, 10, 15), 30),
+        todayTimed1
+      )
+    })
+
+    it("honours a custom lead window", () => {
+      const at0935 = new Date(2026, 7, 28, 9, 35)
+      assert.strictEqual(ScheduleAggregator.heroEvent(todayTimed1, at0935, 10), null)
+      assert.strictEqual(ScheduleAggregator.heroEvent(todayTimed1, at0935, 60), todayTimed1)
+    })
+
+    it("falls back to the default window for missing or nonsense lead values", () => {
+      const at0940 = new Date(2026, 7, 28, 9, 40)
+      assert.strictEqual(ScheduleAggregator.heroEvent(todayTimed1, at0940, undefined), todayTimed1)
+      assert.strictEqual(ScheduleAggregator.heroEvent(todayTimed1, at0940, "nope"), todayTimed1)
+      assert.strictEqual(ScheduleAggregator.heroEvent(todayTimed1, at0940, -5), todayTimed1)
+    })
+
+    it("treats a zero window as start-time only", () => {
+      assert.strictEqual(
+        ScheduleAggregator.heroEvent(todayTimed1, new Date(2026, 7, 28, 9, 59), 0),
+        null
+      )
+      assert.strictEqual(
+        ScheduleAggregator.heroEvent(todayTimed1, new Date(2026, 7, 28, 10, 0), 0),
+        todayTimed1
+      )
+    })
+
+    it("returns null without a meeting", () => {
+      assert.strictEqual(ScheduleAggregator.heroEvent(null, now, 30), null)
+    })
+  })
+
   describe("computeScheduleState()", () => {
     it("computes schedule bundle with next meeting, upcoming today, day groups, and calendar legend", () => {
       const events = [todayTimed1, tmrwTimed]
@@ -224,13 +274,31 @@ describe("ScheduleAggregator", () => {
 
     it("does not repeat the hero meeting in the day groups below it", () => {
       const events = [todayTimed1, todayTimed2, tmrwTimed]
-      const state = ScheduleAggregator.computeScheduleState(events, now, { lookaheadDays: 3 })
-      assert.strictEqual(state.nextMeeting.title, "Daily Standup")
+      // 09:45 puts Daily Standup (10:00) inside the default 30-minute window.
+      const state = ScheduleAggregator.computeScheduleState(events, new Date(2026, 7, 28, 9, 45), {
+        lookaheadDays: 3
+      })
+      assert.strictEqual(state.heroEvent.title, "Daily Standup")
       const titles = state.scheduleGroups.reduce(
         (all, group) => all.concat(group.items.map(item => item.title)),
         []
       )
       assert.deepStrictEqual(titles, ["Design Review", "Saturday Sync"])
+    })
+
+    it("keeps the meeting in the list while the hero card is still withheld", () => {
+      // The regression this guards: excluding nextMeeting rather than heroEvent
+      // would drop the 10:00 standup from the list at 09:00 while the card is
+      // not showing it either, erasing it from the panel altogether.
+      const events = [todayTimed1, todayTimed2, tmrwTimed]
+      const state = ScheduleAggregator.computeScheduleState(events, now, { lookaheadDays: 3 })
+      assert.strictEqual(state.nextMeeting.title, "Daily Standup")
+      assert.strictEqual(state.heroEvent, null)
+      const titles = state.scheduleGroups.reduce(
+        (all, group) => all.concat(group.items.map(item => item.title)),
+        []
+      )
+      assert.deepStrictEqual(titles, ["Daily Standup", "Design Review", "Saturday Sync"])
     })
   })
 })

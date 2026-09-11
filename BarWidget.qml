@@ -22,6 +22,7 @@ BarWidget {
   readonly property string sourceMode: String(setting("sourceMode", icsFeeds.length > 0 ? Model.SOURCE_MODE_ICS : Model.SOURCE_MODE_JSON) || "").trim()
   readonly property int refreshMinutes: Math.max(1, parseInt(setting("refreshMinutes", Model.DEFAULT_REFRESH_MINUTES), 10) || Model.DEFAULT_REFRESH_MINUTES)
   readonly property int showDaysAhead: Math.max(1, parseInt(setting("showDaysAhead", Model.DEFAULT_LOOKAHEAD_DAYS), 10) || Model.DEFAULT_LOOKAHEAD_DAYS)
+  readonly property int heroLeadMinutes: Math.max(0, parseInt(setting("heroLeadMinutes", Model.DEFAULT_HERO_LEAD_MINUTES), 10))
   readonly property int maxTitleLength: Math.max(Model.MIN_MAX_TITLE_LENGTH, parseInt(setting("maxTitleLength", Model.DEFAULT_MAX_TITLE_LENGTH), 10) || Model.DEFAULT_MAX_TITLE_LENGTH)
   readonly property string timeFormat: String(setting("timeFormat", Model.DEFAULT_TIME_FORMAT) || Model.DEFAULT_TIME_FORMAT).trim()
   readonly property bool use12Hour: Model.is12Hour(timeFormat)
@@ -62,6 +63,7 @@ BarWidget {
   property var scheduleGroups: []
   property var calendarLegend: []
   property var nextMeeting: null
+  property var heroEvent: null
   property date lastUpdated: new Date(0)
   property bool lastFetchFailed: false
   // Number of feeds that failed on the last fetch while *some* succeeded;
@@ -202,12 +204,14 @@ BarWidget {
       showOnlyWithVideoLink: root.showOnlyWithVideoLink,
       maxMeetingRows: root.maxMeetingRows,
       maxScheduleRows: root.maxScheduleRows,
+      heroLeadMinutes: root.heroLeadMinutes,
       feeds: root.icsFeeds
     })
     root.meetings = state.meetings
     root.upcomingToday = state.upcomingToday
     root.scheduleGroups = state.scheduleGroups
     root.nextMeeting = state.nextMeeting
+    root.heroEvent = state.heroEvent
     root.calendarLegend = state.calendarLegend || []
     if (lastUpdatedDate) root.lastUpdated = lastUpdatedDate
     root.meetingDataChanged()

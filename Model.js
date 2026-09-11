@@ -15,6 +15,9 @@ var DAYS_PER_WEEK = 7
 
 var DEFAULT_REFRESH_MINUTES = 5
 var DEFAULT_LOOKAHEAD_DAYS = 3
+// Matches the first reminder threshold: the hero card is on screen by the time
+// the 30-minute desktop notification tells you to look at it.
+var DEFAULT_HERO_LEAD_MINUTES = 30
 var DEFAULT_MAX_TITLE_LENGTH = 28
 var MIN_MAX_TITLE_LENGTH = 8
 var MIN_TITLE_CHARS = 3
@@ -163,6 +166,7 @@ var Constants = {
   DAYS_PER_WEEK: DAYS_PER_WEEK,
   DEFAULT_REFRESH_MINUTES: DEFAULT_REFRESH_MINUTES,
   DEFAULT_LOOKAHEAD_DAYS: DEFAULT_LOOKAHEAD_DAYS,
+  DEFAULT_HERO_LEAD_MINUTES: DEFAULT_HERO_LEAD_MINUTES,
   DEFAULT_MAX_TITLE_LENGTH: DEFAULT_MAX_TITLE_LENGTH,
   MIN_MAX_TITLE_LENGTH: MIN_MAX_TITLE_LENGTH,
   MIN_TITLE_CHARS: MIN_TITLE_CHARS,
@@ -1769,6 +1773,24 @@ class ScheduleAggregator {
     return todayEvents
   }
 
+  // The hero card is an action surface -- it carries Join Meeting and Open in
+  // Calendar -- so it only earns the panel's most prominent slot once those
+  // actions are worth taking. Outside the lead window the meeting still appears,
+  // as an ordinary agenda row.
+  static heroEvent(nextMeeting, now, leadMinutes) {
+    if (!nextMeeting || !nextMeeting.start) return null
+    now = now || new Date()
+    var startMs = nextMeeting.start.getTime()
+    if (isNaN(startMs)) return null
+    var lead = parseInt(leadMinutes, 10)
+    if (isNaN(lead) || lead < 0) lead = DEFAULT_HERO_LEAD_MINUTES
+    // A negative difference means the meeting has already started. buildUpcoming
+    // has already dropped anything that ended, so an ongoing meeting always
+    // keeps the card -- losing Join once people are waiting is the worst moment
+    // for it to disappear.
+    return startMs - now.getTime() <= lead * MS_PER_MINUTE ? nextMeeting : null
+  }
+
   // Stable identity for one occurrence, used to keep the hero card's event from
   // also opening the agenda list below it. Includes the start time so that two
   // occurrences of the same recurring series stay distinct.
@@ -1873,6 +1895,8 @@ class ScheduleAggregator {
     var showOnlyWithVideoLink = options.showOnlyWithVideoLink === true
     var maxMeetingRows = options.maxMeetingRows || DEFAULT_MAX_ROWS
     var maxScheduleRows = options.maxScheduleRows || DEFAULT_MAX_ROWS
+    var heroLeadMinutes =
+      options.heroLeadMinutes === undefined ? DEFAULT_HERO_LEAD_MINUTES : options.heroLeadMinutes
 
     var meetings = ScheduleAggregator.buildUpcoming(events, now, {
       lookaheadDays: lookaheadDays,
@@ -1882,11 +1906,15 @@ class ScheduleAggregator {
 
     var upcomingTodayList = ScheduleAggregator.upcomingToday(events, now)
     var nextMeeting = meetings.length > 0 ? meetings[0] : null
+    var heroEvent = ScheduleAggregator.heroEvent(nextMeeting, now, heroLeadMinutes)
 
+    // Exclude the hero occurrence only while the card is actually showing it.
+    // Keying this off nextMeeting instead would hide the meeting from the list
+    // during the hours before the card appears, erasing it from the panel.
     var scheduleGroups = ScheduleAggregator.buildScheduleGroups(events, now, {
       lookaheadDays: lookaheadDays,
       maxRows: maxScheduleRows,
-      excludeEvent: nextMeeting
+      excludeEvent: heroEvent
     })
 
     var calendarLegend = ScheduleAggregator.buildCalendarLegend(events, options.feeds)
@@ -1896,6 +1924,7 @@ class ScheduleAggregator {
       upcomingToday: upcomingTodayList,
       scheduleGroups: scheduleGroups,
       nextMeeting: nextMeeting,
+      heroEvent: heroEvent,
       calendarLegend: calendarLegend
     }
   }
@@ -2351,6 +2380,9 @@ function buildUpcoming(events, now, options) {
 function upcomingToday(events, now) {
   return ScheduleAggregator.upcomingToday(events, now)
 }
+function heroEvent(nextMeeting, now, leadMinutes) {
+  return ScheduleAggregator.heroEvent(nextMeeting, now, leadMinutes)
+}
 function buildScheduleGroups(events, now, options) {
   return ScheduleAggregator.buildScheduleGroups(events, now, options)
 }
@@ -2499,6 +2531,7 @@ if (typeof module !== "undefined" && module.exports) {
     hexToHsv: hexToHsv,
     buildUpcoming: buildUpcoming,
     upcomingToday: upcomingToday,
+    heroEvent: heroEvent,
     buildScheduleGroups: buildScheduleGroups,
     buildCalendarLegend: buildCalendarLegend,
     computeScheduleState: computeScheduleState,

@@ -260,6 +260,19 @@ Item {
       }
 
       SettingStepper {
+        id: heroLeadStepper
+        label: "Next card lead time"
+        description: "Minutes before a meeting that the Next card and Join button appear"
+        from: 0
+        to: 240
+        stepSize: 5
+        value: root.hostWidget ? root.hostWidget.heroLeadMinutes : Model.DEFAULT_HERO_LEAD_MINUTES
+        contentForeground: root.contentForeground
+        contentFontFamily: root.contentFontFamily
+        onModified: function(v) { root.settingChanged("heroLeadMinutes", v) }
+      }
+
+      SettingStepper {
         id: refreshMinStepper
         label: "Refresh interval"
         description: "Minutes between automatic ICS calendar refetches"
