@@ -1875,7 +1875,7 @@ class ScheduleAggregator {
 }
 
 // ---------------------------------------------------------------------------
-// CompactBarPolicy: icon urgency and reminder timing
+// CompactBarPolicy: reminder timing
 // ---------------------------------------------------------------------------
 
 class CompactBarPolicy {
@@ -1888,31 +1888,6 @@ class CompactBarPolicy {
       !isNaN(event.start.getTime()) &&
       !isNaN(event.end.getTime())
     )
-  }
-
-  static state(event, now) {
-    now = now || new Date()
-    if (!CompactBarPolicy.isTimedEvent(event)) return "idle"
-
-    var nowMs = now.getTime()
-    var startMs = event.start.getTime()
-    var endMs = event.end.getTime()
-    if (nowMs >= endMs) return "idle"
-    if (nowMs >= startMs) return "ongoing"
-    if (!DateTimeUtils.isSameDay(event.start, now)) return "idle"
-
-    var minutesUntil = (startMs - nowMs) / MS_PER_MINUTE
-    if (minutesUntil <= 10) return "imminent"
-    if (minutesUntil <= 30) return "soon"
-    return "scheduled"
-  }
-
-  static color(state) {
-    if (state === "ongoing") return "#fb7185"
-    if (state === "imminent") return "#fb923c"
-    if (state === "soon") return "#facc15"
-    if (state === "scheduled") return "#60a5fa"
-    return "#4ade80"
   }
 
   static notificationMilestone(event, now) {
@@ -1942,11 +1917,6 @@ class CompactBarPolicy {
       return ScheduleAggregator.compareUpcoming(left, right, now)
     })
     return timed
-  }
-
-  static nextTimedEvent(events, now) {
-    var timed = CompactBarPolicy.timedEvents(events, now)
-    return timed.length > 0 ? timed[0] : null
   }
 
   static notificationCandidates(events, now) {
@@ -2435,15 +2405,6 @@ function daySectionTitle(date, now) {
 function isEventAllDay(event) {
   return ScheduleAggregator.isEventAllDay(event)
 }
-function compactBarState(event, now) {
-  return CompactBarPolicy.state(event, now)
-}
-function compactBarColor(state) {
-  return CompactBarPolicy.color(state)
-}
-function nextTimedEvent(events, now) {
-  return CompactBarPolicy.nextTimedEvent(events, now)
-}
 function notificationCandidates(events, now) {
   return CompactBarPolicy.notificationCandidates(events, now)
 }
@@ -2532,9 +2493,6 @@ if (typeof module !== "undefined" && module.exports) {
     dayLabel: dayLabel,
     daySectionTitle: daySectionTitle,
     isEventAllDay: isEventAllDay,
-    compactBarState: compactBarState,
-    compactBarColor: compactBarColor,
-    nextTimedEvent: nextTimedEvent,
     notificationCandidates: notificationCandidates,
     notificationMilestone: notificationMilestone,
     notificationKey: notificationKey,

@@ -49,14 +49,6 @@ describe("Model (Facade)", () => {
       assert.strictEqual(state.nextMeeting.title, "Team Standup")
       assert.strictEqual(Model.heroHeaderMeta(ev), "30m  ·    Meet")
       assert.strictEqual(Model.barLabel(true, ev, now, 30), "  Team Standup · in 60 min")
-      assert.strictEqual(Model.compactBarState(ev, now), "scheduled")
-      assert.deepStrictEqual(
-        ["idle", "scheduled", "soon", "imminent", "ongoing"].map(state =>
-          Model.compactBarColor(state)
-        ),
-        ["#4ade80", "#60a5fa", "#facc15", "#fb923c", "#fb7185"]
-      )
-      assert.strictEqual(Model.nextTimedEvent([ev], now), ev)
       assert.deepStrictEqual(Model.notificationCandidates([ev], new Date(2026, 7, 28, 9, 30)), [
         { event: ev, milestone: 30 }
       ])

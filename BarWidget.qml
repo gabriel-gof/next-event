@@ -62,7 +62,6 @@ BarWidget {
   property var scheduleGroups: []
   property var calendarLegend: []
   property var nextMeeting: null
-  property var compactEvent: null
   property date lastUpdated: new Date(0)
   property bool lastFetchFailed: false
   // Number of feeds that failed on the last fetch while *some* succeeded;
@@ -80,8 +79,6 @@ BarWidget {
   property string currentFeedColor: ""
   property string feedOutput: ""
 
-  readonly property string compactState: Model.compactBarState(root.compactEvent, root.now)
-  readonly property color compactColor: Model.compactBarColor(root.compactState)
   readonly property string label: Model.ICON_MEETING_VIDEO
   readonly property bool inMeeting: nextMeeting
     && !nextMeeting.allDay
@@ -211,7 +208,6 @@ BarWidget {
     root.upcomingToday = state.upcomingToday
     root.scheduleGroups = state.scheduleGroups
     root.nextMeeting = state.nextMeeting
-    root.compactEvent = Model.nextTimedEvent(root.rawEvents, root.now)
     root.calendarLegend = state.calendarLegend || []
     if (lastUpdatedDate) root.lastUpdated = lastUpdatedDate
     root.meetingDataChanged()
@@ -385,10 +381,8 @@ BarWidget {
     anchors.fill: parent
     bar: root.bar
     text: root.label
-    foreground: root.compactColor
     labelVisible: true
     hasVisualContent: true
-    dimmed: false
     active: root.inMeeting
     useActiveColor: false
     horizontalMargin: 8.75

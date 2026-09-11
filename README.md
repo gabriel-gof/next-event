@@ -6,9 +6,9 @@
 [![ESLint](https://img.shields.io/badge/linter-eslint-4B32C3.svg?logo=eslint&logoColor=white)](https://eslint.org)
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?logo=prettier&logoColor=white)](https://github.com/prettier/prettier)
 
-Your calendar, quietly present in the Omarchy bar. A single camera glyph changes
-color as the next timed event approaches, while the full agenda stays one click
-away. Desktop reminders arrive 30 and 10 minutes before the event.
+Your calendar, quietly present in the Omarchy bar. A single camera glyph sits
+among the other bar icons, while the full agenda stays one click away. Desktop
+reminders arrive 30 and 10 minutes before the event.
 
 This personal fork is based on
 [tobiasz-p/next-event](https://github.com/tobiasz-p/next-event) and keeps that
@@ -64,7 +64,7 @@ project as its upstream source.
 
 - **Google Workspace OAuth & Universal Calendar Support**: Connect corporate Google Workspace accounts via guided OAuth setup, or use standard `.ics` feeds from Google Calendar, Microsoft Outlook, Apple iCloud, Nextcloud, Proton, and custom URLs
 - **Multiple Calendars**: Combine several `.ics` feeds (e.g. work + personal) into one widget. Give each feed a `label|` name so events carry a small tag, shared events are deduplicated, and one offline calendar doesn't hide the rest
-- **Compact Bar Widget**: Always renders one camera glyph instead of an event title or countdown. Green means no timed events remain today, blue means at least one remains later today, yellow means the next event is within 30 minutes, orange means within 10 minutes, and pink means an event is happening now
+- **Compact Bar Widget**: Always renders one camera glyph instead of an event title or countdown, in the same color as every other bar icon, so it blends into the bar instead of competing with it
 - **Focused Reminders**: Sends one desktop notification around 30 minutes before and another around 10 minutes before each timed event. A 60-second delivery window allows one retry on the next 30-second tick without producing late reminders. All-day entries stay silent, and a private on-disk ledger prevents duplicates across monitors and shell restarts
 - **Quick Join & Settings**: Click to open the agenda panel; single click on "Join Meeting" opens the video link (Google Meet, Zoom, Teams, Webex, GoToMeeting) in your default browser; click the Settings button next to Refresh (or press `,`) to customize all options directly in the UI
 - **Instant Actions**: Right-click on the bar widget to join the next meeting immediately; middle-click to force-refresh
@@ -173,10 +173,10 @@ Configure settings with `omarchy bar set gabriel.next-event <key> <value>`:
 | `maxTitleLength`      | `28`    | Legacy upstream setting; the compact bar does not render titles |
 | `timeFormat`          | `24`    | Time display format: `24` (24-hour) or `12` (AM/PM) |
 | `maxFeedSizeMiB`      | `10`    | Maximum size of each downloaded calendar feed (MiB) |
-| `showOnlyWithVideoLink` | `false` | Only show events with a video link in the agenda panel; compact colors and reminders still cover every timed event |
+| `showOnlyWithVideoLink` | `false` | Only show events with a video link in the agenda panel; reminders still cover every timed event |
 | `showCalendarLabel`   | `true`  | Include calendar name in the bar widget tooltip      |
 | `useCalendarColors`   | `true`  | Tint event indicators and badges in the panel using calendar-specific colors |
-| `colorOnBar`          | `false` | Legacy upstream setting; compact urgency colors always control the glyph |
+| `colorOnBar`          | `false` | Legacy upstream setting; the compact glyph always uses the bar foreground color |
 | `browserCommand`      | `""`    | Command used to open the Meet URL (`xdg-open` by default) |
 | `calendarUrlBase`     | `"https://calendar.google.com/calendar"` | Base URL for "Open in Calendar" (opens `/r` route; set e.g. `https://calendar.google.com/calendar/u/1` for multi-account) |
 | `keyRefresh`          | `r`     | Panel key that force-refreshes the feeds            |

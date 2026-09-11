@@ -19,69 +19,6 @@ describe("CompactBarPolicy", () => {
     return new Date(start.getTime() - minutes * 60 * 1000)
   }
 
-  describe("state()", () => {
-    it("maps a timed event to the compact bar urgency bands", () => {
-      assert.strictEqual(CompactBarPolicy.state(event, minutesBefore(31)), "scheduled")
-      assert.strictEqual(CompactBarPolicy.state(event, minutesBefore(30)), "soon")
-      assert.strictEqual(CompactBarPolicy.state(event, minutesBefore(10)), "imminent")
-      assert.strictEqual(CompactBarPolicy.state(event, start), "ongoing")
-    })
-
-    it("treats missing and all-day events as idle", () => {
-      const allDay = new CalendarEvent({
-        uid: "holiday",
-        title: "Holiday",
-        start: new Date(2026, 7, 31, 0, 0, 0),
-        end: new Date(2026, 8, 1, 0, 0, 0),
-        allDay: true
-      })
-
-      assert.strictEqual(CompactBarPolicy.state(null, minutesBefore(31)), "idle")
-      assert.strictEqual(CompactBarPolicy.state(allDay, minutesBefore(31)), "idle")
-    })
-
-    it("keeps tomorrow's events idle today", () => {
-      const tomorrowEvent = new CalendarEvent({
-        uid: "tomorrow-sync",
-        title: "Tomorrow Sync",
-        start: new Date(2026, 8, 1, 0, 10, 0),
-        end: new Date(2026, 8, 1, 1, 0, 0),
-        allDay: false
-      })
-
-      assert.strictEqual(
-        CompactBarPolicy.state(tomorrowEvent, new Date(2026, 7, 31, 23, 50, 0)),
-        "idle"
-      )
-    })
-
-    it("keeps a cross-midnight event pink while it is happening", () => {
-      const overnightEvent = new CalendarEvent({
-        uid: "overnight-maintenance",
-        title: "Overnight Maintenance",
-        start: new Date(2026, 7, 31, 23, 30, 0),
-        end: new Date(2026, 8, 1, 0, 30, 0),
-        allDay: false
-      })
-
-      assert.strictEqual(
-        CompactBarPolicy.state(overnightEvent, new Date(2026, 8, 1, 0, 10, 0)),
-        "ongoing"
-      )
-    })
-  })
-
-  describe("color()", () => {
-    it("maps the five status states to their approved signal colors", () => {
-      assert.deepStrictEqual(
-        ["idle", "scheduled", "soon", "imminent", "ongoing"].map(state =>
-          CompactBarPolicy.color(state)
-        ),
-        ["#4ade80", "#60a5fa", "#facc15", "#fb923c", "#fb7185"]
-      )
-    })
-  })
-
   describe("notificationMilestone()", () => {
     it("selects only the 60-second window after each reminder threshold", () => {
       assert.strictEqual(CompactBarPolicy.notificationMilestone(event, minutesBefore(31)), null)
@@ -138,7 +75,7 @@ describe("CompactBarPolicy", () => {
   })
 
   describe("timed event selection", () => {
-    it("selects the next timed event instead of an ongoing all-day event", () => {
+    it("keeps an ongoing all-day event out of the reminder pool", () => {
       const allDay = new CalendarEvent({
         uid: "offsite",
         title: "Offsite",
@@ -147,9 +84,9 @@ describe("CompactBarPolicy", () => {
         allDay: true
       })
 
-      assert.strictEqual(
-        CompactBarPolicy.nextTimedEvent([allDay, event], new Date(2026, 7, 31, 9, 0)),
-        event
+      assert.deepStrictEqual(
+        CompactBarPolicy.timedEvents([allDay, event], new Date(2026, 7, 31, 9, 0)),
+        [event]
       )
     })
 
