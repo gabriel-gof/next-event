@@ -1769,6 +1769,16 @@ class ScheduleAggregator {
     return todayEvents
   }
 
+  // Stable identity for one occurrence, used to keep the hero card's event from
+  // also opening the agenda list below it. Includes the start time so that two
+  // occurrences of the same recurring series stay distinct.
+  static eventIdentity(event) {
+    if (!event || !event.start) return ""
+    var startMs = event.start.getTime()
+    if (isNaN(startMs)) return ""
+    return String(event.uid || event.title || LABEL_UNTITLED) + "|" + startMs
+  }
+
   static buildScheduleGroups(events, now, options) {
     now = now || new Date()
     options = options || {}
@@ -1788,6 +1798,21 @@ class ScheduleAggregator {
     validEvents.sort(function (a, b) {
       return ScheduleAggregator.compareUpcoming(a, b, now)
     })
+
+    // The hero card above the list already renders this occurrence in full, so
+    // repeating it as the very first row adds nothing. Only the leading row is
+    // ever dropped: removing a match further down would leave a visible gap in
+    // the middle of a day whenever the hero is not the next event overall
+    // (which is what showOnlyWithVideoLink produces).
+    var excludedIdentity = ScheduleAggregator.eventIdentity(options.excludeEvent)
+    if (
+      excludedIdentity &&
+      validEvents.length > 0 &&
+      ScheduleAggregator.eventIdentity(validEvents[0]) === excludedIdentity
+    ) {
+      validEvents = validEvents.slice(1)
+    }
+
     if (validEvents.length > maxRows) validEvents = validEvents.slice(0, maxRows)
 
     var groups = []
@@ -1856,10 +1881,12 @@ class ScheduleAggregator {
     })
 
     var upcomingTodayList = ScheduleAggregator.upcomingToday(events, now)
+    var nextMeeting = meetings.length > 0 ? meetings[0] : null
 
     var scheduleGroups = ScheduleAggregator.buildScheduleGroups(events, now, {
       lookaheadDays: lookaheadDays,
-      maxRows: maxScheduleRows
+      maxRows: maxScheduleRows,
+      excludeEvent: nextMeeting
     })
 
     var calendarLegend = ScheduleAggregator.buildCalendarLegend(events, options.feeds)
@@ -1868,7 +1895,7 @@ class ScheduleAggregator {
       meetings: meetings,
       upcomingToday: upcomingTodayList,
       scheduleGroups: scheduleGroups,
-      nextMeeting: meetings.length > 0 ? meetings[0] : null,
+      nextMeeting: nextMeeting,
       calendarLegend: calendarLegend
     }
   }

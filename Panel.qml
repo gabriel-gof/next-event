@@ -78,7 +78,11 @@ Panel {
     var configured = !!root.hostWidget.configured
     setupGuide.visible = !root.inSettingsView && !configured
     heroCard.visible = !root.inSettingsView && configured && !!root.next
-    emptySchedule.visible = !root.inSettingsView && configured && root.scheduleGroups.length === 0
+    // The hero card counts as content: with a single upcoming event the agenda
+    // list is legitimately empty, and claiming "no upcoming meetings" directly
+    // under a rendered meeting contradicts the card above it.
+    emptySchedule.visible =
+      !root.inSettingsView && configured && root.scheduleGroups.length === 0 && !root.next
     scheduleContainer.visible = !root.inSettingsView && configured && root.scheduleGroups.length > 0
     settingsView.visible = root.inSettingsView
     headerBar.inSettingsView = root.inSettingsView

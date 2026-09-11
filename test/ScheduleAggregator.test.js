@@ -115,6 +115,67 @@ describe("ScheduleAggregator", () => {
       assert.strictEqual(groups[1].title, "TOMORROW · SAT 29 AUG")
       assert.strictEqual(groups[1].items[0].title, "Saturday Sync")
     })
+
+    it("drops the leading row when the hero card already shows that occurrence", () => {
+      const events = [todayTimed1, todayTimed2, tmrwTimed]
+      const groups = ScheduleAggregator.buildScheduleGroups(events, now, {
+        lookaheadDays: 3,
+        excludeEvent: todayTimed1
+      })
+      assert.strictEqual(groups[0].items.length, 1)
+      assert.strictEqual(groups[0].items[0].title, "Design Review")
+      assert.strictEqual(groups[1].items[0].title, "Saturday Sync")
+    })
+
+    it("keeps a hero occurrence that is not the leading row, so no day gains a gap", () => {
+      // showOnlyWithVideoLink can make the hero a later event than the first
+      // row; removing it there would silently blank a slot mid-day.
+      const events = [todayTimed1, todayTimed2, tmrwTimed]
+      const groups = ScheduleAggregator.buildScheduleGroups(events, now, {
+        lookaheadDays: 3,
+        excludeEvent: todayTimed2
+      })
+      assert.deepStrictEqual(
+        groups[0].items.map(item => item.title),
+        ["Daily Standup", "Design Review"]
+      )
+    })
+
+    it("empties the list when the hero occurrence is the only upcoming event", () => {
+      const groups = ScheduleAggregator.buildScheduleGroups([todayTimed1], now, {
+        lookaheadDays: 3,
+        excludeEvent: todayTimed1
+      })
+      assert.deepStrictEqual(groups, [])
+    })
+
+    it("matches the hero by occurrence, not by series, for recurring events", () => {
+      const secondOccurrence = new CalendarEvent({
+        uid: "timed-1",
+        title: "Daily Standup",
+        start: new Date(2026, 7, 29, 10, 0, 0),
+        end: new Date(2026, 7, 29, 10, 30, 0),
+        allDay: false
+      })
+      const groups = ScheduleAggregator.buildScheduleGroups([todayTimed1, secondOccurrence], now, {
+        lookaheadDays: 3,
+        excludeEvent: todayTimed1
+      })
+      assert.strictEqual(groups.length, 1)
+      assert.strictEqual(groups[0].items.length, 1)
+      assert.strictEqual(groups[0].items[0].start.getDate(), 29)
+    })
+
+    it("counts rows after the hero row is dropped, so maxRows still fills", () => {
+      const events = [todayTimed1, todayTimed2, tmrwTimed]
+      const groups = ScheduleAggregator.buildScheduleGroups(events, now, {
+        lookaheadDays: 3,
+        maxRows: 2,
+        excludeEvent: todayTimed1
+      })
+      const titles = groups.reduce((all, group) => all.concat(group.items.map(i => i.title)), [])
+      assert.deepStrictEqual(titles, ["Design Review", "Saturday Sync"])
+    })
   })
 
   describe("buildCalendarLegend()", () => {
@@ -157,9 +218,19 @@ describe("ScheduleAggregator", () => {
       assert.strictEqual(state.nextMeeting.title, "Daily Standup")
       assert.strictEqual(state.meetings.length, 2)
       assert.strictEqual(state.upcomingToday.length, 1)
-      assert.strictEqual(state.scheduleGroups.length, 2)
       assert.strictEqual(state.calendarLegend.length, 1)
       assert.strictEqual(state.calendarLegend[0].name, "Work")
+    })
+
+    it("does not repeat the hero meeting in the day groups below it", () => {
+      const events = [todayTimed1, todayTimed2, tmrwTimed]
+      const state = ScheduleAggregator.computeScheduleState(events, now, { lookaheadDays: 3 })
+      assert.strictEqual(state.nextMeeting.title, "Daily Standup")
+      const titles = state.scheduleGroups.reduce(
+        (all, group) => all.concat(group.items.map(item => item.title)),
+        []
+      )
+      assert.deepStrictEqual(titles, ["Design Review", "Saturday Sync"])
     })
   })
 })
